@@ -32,4 +32,4 @@ A sketchbook of algorithms and data structure implementations for study and refe
 - Require signed commits
 - Squash+rebase merge only
 
-*Focus on time/space complexity and correctness. Use `cmake` for building*
+*Focus on time/space complexity and correctness. Use cmake for building*
