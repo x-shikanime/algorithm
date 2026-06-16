@@ -1,6 +1,7 @@
 # Algorithm
 
-A sketchbook of algorithms and data structure implementations for study and reference.
+A sketchbook of algorithms and data structure implementations for study and
+reference.
 
 **Language:** C++
 
@@ -9,6 +10,11 @@ A sketchbook of algorithms and data structure implementations for study and refe
 - `src/` — Implementation files
 - `tests/` — Validation tests for each algorithm
 - `docs/` — Complexity analysis and explanations
+
+## Build
+
+- Use cmake for building
+- Run tests with `ctest` or directly via the test executables
 
 ## Commit Style
 
@@ -32,4 +38,5 @@ A sketchbook of algorithms and data structure implementations for study and refe
 - Require signed commits
 - Squash+rebase merge only
 
-*Focus on time/space complexity and correctness. Use cmake for building*
+*Focus on time/space complexity and correctness. Always use worktrees when
+making changes.*
