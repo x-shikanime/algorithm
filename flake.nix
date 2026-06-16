@@ -48,56 +48,60 @@
         {
           devenv = {
             modules = [
-              devlib.devenvModules.docs
-              devlib.devenvModules.formats
               devlib.devenvModules.nix
               devlib.devenvModules.shell
               devlib.devenvModules.shikanime
             ];
             shells = {
               default = {
-                imports = [
-                  devlib.devenvModules.github
-                ];
-                github.workflows.test = with config.devenv.shells.default.github.actions; {
-                  enable = true;
-                  settings = {
-                    name = "Test";
-                    on = {
-                      push.branches = [ "main" ];
-                      pull_request.branches = [
-                        "main"
-                        "gh/*/*/base"
-                      ];
-                    };
-                    jobs.test = {
-                      "runs-on" = "ubuntu-latest";
-                      steps = with config.devenv.shells.default.github.lib; [
-                        create-github-app-token
-                        checkout
-                        setup-nix
-                        {
-                          run = mkWorkflowRun [
-                            "nix"
-                            "develop"
-                            "--accept-flake-config"
-                            "--no-pure-eval"
-                            ".#${mkWorkflowRef "matrix.package"}"
-                            "--command"
-                            "devenv"
-                            "test"
-                          ];
-                          "working-directory" = mkWorkflowRef "matrix.package";
-                        }
-                      ];
-                      strategy.matrix.package = [
-                        "algorithm-cc"
-                        "algorithm-elixir"
-                        "algorithm-javascript"
-                        "algorithm-ocaml"
-                        "algorithm-python"
-                      ];
-                    };
+                github.settings.workflows.test = {
+                  name = "Test";
+                  on = {
+                    push.branches = [ "main" ];
+                    pull_request.branches = [
+                      "main"
+                      "gh/*/*/base"
+                    ];
+                  };
+                  jobs.test = {
+                    "runs-on" = "ubuntu-latest";
+                    strategy.matrix.package = [
+                      "algorithm-cc"
+                      "algorithm-elixir"
+                      "algorithm-javascript"
+                      "algorithm-ocaml"
+                      "algorithm-python"
+                    ];
+                    steps = [
+                      {
+                        continue-on-error = true;
+                        id = "createGithubAppToken";
+                        uses = "actions/create-github-app-token@v3";
+                        "with" = {
+                          app-id = "\${{ vars.OPERATOR_APP_ID }}";
+                          private-key = "\${{ secrets.OPERATOR_PRIVATE_KEY }}";
+                          permission-contents = "read";
+                        };
+                      }
+                      {
+                        uses = "shikanime-studio/actions/nix/setup@v9";
+                        "with" = {
+                          github-token = "\${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}";
+                        };
+                      }
+                      {
+                        uses = "shikanime-studio/actions/checkout@v9";
+                        "with" = {
+                          github-token = "\${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}";
+                        };
+                      }
+                      {
+                        run = ''
+                          nix develop --accept-flake-config --no-pure-eval ".#''${{ matrix.package }}" --command devenv test
+                        '';
+                        "working-directory" = "\${{ matrix.package }}";
+                      }
+                    ];
                   };
                 };
               };
@@ -169,7 +173,6 @@
         };
       systems = [
         "x86_64-linux"
-        "x86_64-darwin"
         "aarch64-linux"
         "aarch64-darwin"
       ];
