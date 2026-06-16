@@ -48,17 +48,12 @@
         {
           devenv = {
             modules = [
-              devlib.devenvModules.docs
-              devlib.devenvModules.formats
               devlib.devenvModules.nix
               devlib.devenvModules.shell
               devlib.devenvModules.shikanime
             ];
             shells = {
               default = {
-                imports = [
-                  devlib.devenvModules.github
-                ];
                 github.workflows.test = with config.devenv.shells.default.github.actions; {
                   enable = true;
                   settings = {
@@ -169,7 +164,6 @@
         };
       systems = [
         "x86_64-linux"
-        "x86_64-darwin"
         "aarch64-linux"
         "aarch64-darwin"
       ];
