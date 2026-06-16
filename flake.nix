@@ -48,8 +48,6 @@
         {
           devenv = {
             modules = [
-              devlib.devenvModules.docs
-              devlib.devenvModules.formats
               devlib.devenvModules.nix
               devlib.devenvModules.shell
               devlib.devenvModules.shikanime
@@ -169,7 +167,6 @@
         };
       systems = [
         "x86_64-linux"
-        "x86_64-darwin"
         "aarch64-linux"
         "aarch64-darwin"
       ];
