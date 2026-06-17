@@ -21,44 +21,17 @@ permissions:
         required: true
 jobs:
   nix:
-    name: Checks
-    runs-on: ubuntu-latest
     permissions:
       contents: read
-    steps:
-      - id: createGithubAppToken
-        continue-on-error: true
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ vars.OPERATOR_APP_ID }}
-          permission-contents: read
-          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
-      - uses: shikanime-studio/actions/nix/setup@v9
-        with:
-          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          cachix-name: shikanime
-          github-token:
-            ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN
-            }}
-      - uses: shikanime-studio/actions/checkout@v9
-        with:
-          github-token:
-            ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN
-            }}
-      - id: direnv
-        uses: shikanime-studio/actions/direnv@v9
-      - env: ${{ fromJSON(steps.direnv.outputs.env) }}
-        run: |
-          nix flake check --accept-flake-config --no-pure-eval --system "${{ matrix.system }}"
-        shell: bash
-    strategy:
-      fail-fast: false
-      matrix:
-        system:
-          - x86_64-linux
-          - aarch64-linux
+      packages: write
+    secrets:
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      OPERATOR_PRIVATE_KEY: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+    uses: ./.github/workflows/nix.yaml
+    with:
+      cachix-name: shikanime
   release:
-    if: |
+    if:
       (startsWith(github.ref, 'refs/tags/v')) || (github.event_name ==
       'workflow_dispatch' && startsWith(github.event.inputs.ref_name, 'v'))
     needs:
