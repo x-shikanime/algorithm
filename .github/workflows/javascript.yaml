@@ -1,0 +1,54 @@
+name: JavaScript
+permissions:
+  contents: read
+"on":
+  workflow_call:
+    secrets:
+      OPERATOR_PRIVATE_KEY:
+        required: true
+  workflow_dispatch: {}
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - id: createGithubAppToken
+        continue-on-error: true
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.OPERATOR_APP_ID }}
+          permission-contents: read
+          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+      - uses: shikanime-studio/actions/checkout@v9
+        with:
+          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+      - uses: shikanime-studio/actions/nix/setup@v9
+        with:
+          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+      - id: direnv
+        uses: shikanime-studio/actions/direnv@v9
+      - env: ${{ fromJSON(steps.direnv.outputs.env) }}
+        uses: shikanime-studio/actions/pnpm/integration@v9
+  build-workspace:
+    name: Build (Workspace)
+    runs-on: ubuntu-latest
+    steps:
+      - id: createGithubAppToken
+        continue-on-error: true
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.OPERATOR_APP_ID }}
+          permission-contents: read
+          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+      - uses: shikanime-studio/actions/checkout@v9
+        with:
+          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+      - uses: shikanime-studio/actions/nix/setup@v9
+        with:
+          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+      - id: direnv
+        uses: shikanime-studio/actions/direnv@v9
+      - env: ${{ fromJSON(steps.direnv.outputs.env) }}
+        uses: shikanime-studio/actions/pnpm/integration@v9
+        with:
+          recursive: true

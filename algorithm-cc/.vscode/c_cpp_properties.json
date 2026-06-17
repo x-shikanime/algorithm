@@ -1,10 +1,1 @@
-{
-  "version": 4,
-  "configurations": [
-    {
-      "name": "Default",
-      "compileCommands": "${workspaceFolder}/out/build/unknown-unknown-gnu/compile_commands.json",
-      "configurationProvider": "ms-vscode.cmake-tools"
-    }
-  ]
-}
+{"version": 4, "configurations": [{"name": "Default", "compileCommands": "${workspaceFolder}/out/build/unknown-unknown-gnu/compile_commands.json", "configurationProvider": "ms-vscode.cmake-tools"}]}

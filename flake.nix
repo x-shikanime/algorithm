@@ -73,6 +73,7 @@
           pkgs,
           ...
         }:
+        with lib;
         {
           devenv = {
             modules = [
@@ -80,70 +81,84 @@
               devlib.devenvModules.shell
               devlib.devenvModules.shikanime
             ];
-            shells = {
-              default.github.workflows.nix.enable = true;
-              algorithm-cc = {
-                enterTest = ''
-                  ${lib.getExe pkgs.cmake} \
-                    --preset unknown-unknown-gnu \
-                    -B out/build/unknown-unknown-gnu
-                  ${lib.getExe pkgs.cmake} \
-                    --build out/build/unknown-unknown-gnu
-                  ${pkgs.cmake}/bin/ctest \
-                    --preset unknown-unknown-gnu \
-                    --test-dir out/build/unknown-unknown-gnu
-                '';
-                gitignore.templates = [
-                  "tt:c"
-                  "tt:c++"
-                ];
-                packages = [
-                  pkgs.ninja
-                  pkgs.gcc
-                  pkgs.openssl
-                  pkgs.binutils
-                  pkgs.cmake
-                  pkgs.gtest
-                ];
-                treefmt.config.programs = {
-                  clang-format.enable = true;
-                  cmake-format.enable = true;
+            shells.default = {
+              imports = [
+                devlib.devenvModules.elixir
+                devlib.devenvModules.javascript
+                devlib.devenvModules.ocaml
+                devlib.devenvModules.python
+              ];
+
+              github.workflows.nix.enable = true;
+
+              gitignore.templates = [
+                "tt:c"
+                "tt:c++"
+              ];
+
+              languages = {
+                javascript.directory = "algorithm-javascript";
+                python.directory = "algorithm-python";
+              };
+
+              packages = [
+                pkgs.ninja
+                pkgs.gcc
+                pkgs.openssl
+                pkgs.binutils
+                pkgs.cmake
+                pkgs.gtest
+              ];
+
+              tasks = {
+                "algorithm:cc" = {
+                  before = [ "devenv:enterTest" ];
+                  exec = ''
+                    ${getExe pkgs.cmake} \
+                      --preset unknown-unknown-gnu \
+                      -B out/build/unknown-unknown-gnu
+                    ${getExe pkgs.cmake} \
+                      --build out/build/unknown-unknown-gnu
+                    ${pkgs.cmake}/bin/ctest \
+                      --preset unknown-unknown-gnu \
+                      --test-dir out/build/unknown-unknown-gnu
+                  '';
+
+                };
+                "algorithm:elixir" = {
+                  before = [ "devenv:enterTest" ];
+                  exec = ''
+                    ${pkgs.elixir}/bin/mix deps.get
+                    ${pkgs.elixir}/bin/mix test
+                  '';
+                };
+
+                "algorithm:javascript" = {
+                  before = [ "devenv:enterTest" ];
+                  exec = ''
+                    ${pkgs.nodejs}/bin/npm ci
+                    ${pkgs.nodejs}/bin/npm run test
+                  '';
+                };
+
+                "algorithm:ocaml" = {
+                  before = [ "devenv:enterTest" ];
+                  exec = ''
+                    ${getExe pkgs.dune_3} runtest
+                  '';
+                };
+
+                "algorithm:python" = {
+                  before = [ "devenv:enterTest" ];
+                  exec = ''
+                    ${getExe pkgs.uv} run pytest
+                  '';
                 };
               };
 
-              algorithm-elixir = {
-                imports = [
-                  devlib.devenvModules.elixir
-                ];
-                enterTest = ''
-                  ${pkgs.elixir}/bin/mix deps.get
-                  ${pkgs.elixir}/bin/mix test
-                '';
-              };
-              algorithm-javascript = {
-                imports = [
-                  devlib.devenvModules.javascript
-                ];
-                enterTest = ''
-                  ${pkgs.nodejs}/bin/npm ci
-                  ${pkgs.nodejs}/bin/npm run test
-                '';
-              };
-              algorithm-ocaml = {
-                imports = [
-                  devlib.devenvModules.ocaml
-                ];
-                enterTest = ''
-                  ${lib.getExe pkgs.dune_3} runtest
-                '';
-              };
-              algorithm-python = {
-                imports = [
-                  devlib.devenvModules.python
-                ];
-                enterTest = ''
-                  ${lib.getExe pkgs.uv} run pytest
-                '';
+              treefmt.config.programs = {
+                clang-format.enable = true;
+                cmake-format.enable = true;
               };
             };
           };
