@@ -1,6 +1,1 @@
-{
-  "sonarlint.pathToCompileCommands": "${workspaceFolder}/out/build/unknown-unknown-gnu/compile_commands.json",
-  "C_Cpp.default.cStandard": "c17",
-  "C_Cpp.default.cppStandard": "c++20",
-  "cmake.configureOnOpen": true
-}
+{"C_Cpp.default.cStandard": "c17", "C_Cpp.default.cppStandard": "c++20", "cmake.configureOnOpen": true, "sonarlint.pathToCompileCommands": "${workspaceFolder}/out/build/unknown-unknown-gnu/compile_commands.json"}

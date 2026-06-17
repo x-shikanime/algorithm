@@ -1,12 +1,41 @@
 {
   inputs = {
-    automata.url = "github:shikanime-studio/automata";
-    devenv.url = "github:cachix/devenv";
-    devlib.url = "github:shikanime-studio/devlib";
-    flake-parts.url = "github:hercules-ci/flake-parts";
-    git-hooks.url = "github:cachix/git-hooks.nix";
+    devenv = {
+      url = "github:cachix/devenv";
+      inputs = {
+        flake-parts.follows = "flake-parts";
+        git-hooks.follows = "git-hooks";
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
+
+    devlib = {
+      url = "github:shikanime-studio/devlib";
+      inputs = {
+        devenv.follows = "devenv";
+        flake-parts.follows = "flake-parts";
+        git-hooks.follows = "git-hooks";
+        nixpkgs.follows = "nixpkgs";
+        treefmt-nix.follows = "treefmt-nix";
+      };
+    };
+
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
+
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    treefmt-nix.url = "github:numtide/treefmt-nix";
+
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   nixConfig = {
@@ -40,136 +69,102 @@
       ];
       perSystem =
         {
-          config,
           lib,
           pkgs,
           ...
         }:
+        with lib;
         {
           devenv = {
             modules = [
-              devlib.devenvModules.docs
-              devlib.devenvModules.formats
               devlib.devenvModules.nix
               devlib.devenvModules.shell
               devlib.devenvModules.shikanime
             ];
-            shells = {
-              default = {
-                imports = [
-                  devlib.devenvModules.github
-                ];
-                github.workflows.test = with config.devenv.shells.default.github.actions; {
-                  enable = true;
-                  settings = {
-                    name = "Test";
-                    on = {
-                      push.branches = [ "main" ];
-                      pull_request.branches = [
-                        "main"
-                        "gh/*/*/base"
-                      ];
-                    };
-                    jobs.test = {
-                      "runs-on" = "ubuntu-latest";
-                      steps = with config.devenv.shells.default.github.lib; [
-                        create-github-app-token
-                        checkout
-                        setup-nix
-                        {
-                          run = mkWorkflowRun [
-                            "nix"
-                            "develop"
-                            "--accept-flake-config"
-                            "--no-pure-eval"
-                            ".#${mkWorkflowRef "matrix.package"}"
-                            "--command"
-                            "devenv"
-                            "test"
-                          ];
-                          "working-directory" = mkWorkflowRef "matrix.package";
-                        }
-                      ];
-                      strategy.matrix.package = [
-                        "algorithm-cc"
-                        "algorithm-elixir"
-                        "algorithm-javascript"
-                        "algorithm-ocaml"
-                        "algorithm-python"
-                      ];
-                    };
-                  };
-                };
+            shells.default = {
+              imports = [
+                devlib.devenvModules.elixir
+                devlib.devenvModules.javascript
+                devlib.devenvModules.ocaml
+                devlib.devenvModules.python
+              ];
+
+              github.workflows.nix.enable = true;
+
+              gitignore.templates = [
+                "tt:c"
+                "tt:c++"
+              ];
+
+              languages = {
+                javascript.directory = "algorithm-javascript";
+                python.directory = "algorithm-python";
               };
-              algorithm-cc = {
-                enterTest = ''
-                  ${lib.getExe pkgs.cmake} \
-                    --preset unknown-unknown-gnu \
-                    -B out/build/unknown-unknown-gnu
-                  ${lib.getExe pkgs.cmake} \
-                    --build out/build/unknown-unknown-gnu
-                  ${pkgs.cmake}/bin/ctest \
-                    --preset unknown-unknown-gnu \
-                    --test-dir out/build/unknown-unknown-gnu
-                '';
-                gitignore.templates = [
-                  "tt:c"
-                  "tt:c++"
-                ];
-                packages = [
-                  pkgs.ninja
-                  pkgs.gcc
-                  pkgs.openssl
-                  pkgs.binutils
-                  pkgs.cmake
-                  pkgs.gtest
-                ];
-                treefmt.config.programs = {
-                  clang-format.enable = true;
-                  cmake-format.enable = true;
+
+              packages = [
+                pkgs.ninja
+                pkgs.gcc
+                pkgs.openssl
+                pkgs.binutils
+                pkgs.cmake
+                pkgs.gtest
+              ];
+
+              tasks = {
+                "algorithm:cc" = {
+                  before = [ "devenv:enterTest" ];
+                  exec = ''
+                    ${getExe pkgs.cmake} \
+                      --preset unknown-unknown-gnu \
+                      -B out/build/unknown-unknown-gnu
+                    ${getExe pkgs.cmake} \
+                      --build out/build/unknown-unknown-gnu
+                    ${pkgs.cmake}/bin/ctest \
+                      --preset unknown-unknown-gnu \
+                      --test-dir out/build/unknown-unknown-gnu
+                  '';
+
+                };
+                "algorithm:elixir" = {
+                  before = [ "devenv:enterTest" ];
+                  exec = ''
+                    ${pkgs.elixir}/bin/mix deps.get
+                    ${pkgs.elixir}/bin/mix test
+                  '';
+                };
+
+                "algorithm:javascript" = {
+                  before = [ "devenv:enterTest" ];
+                  exec = ''
+                    ${pkgs.nodejs}/bin/npm ci
+                    ${pkgs.nodejs}/bin/npm run test
+                  '';
+                };
+
+                "algorithm:ocaml" = {
+                  before = [ "devenv:enterTest" ];
+                  exec = ''
+                    ${getExe pkgs.dune_3} runtest
+                  '';
+                };
+
+                "algorithm:python" = {
+                  before = [ "devenv:enterTest" ];
+                  exec = ''
+                    ${getExe pkgs.uv} run pytest
+                  '';
                 };
               };
 
-              algorithm-elixir = {
-                imports = [
-                  devlib.devenvModules.elixir
-                ];
-                enterTest = ''
-                  ${pkgs.elixir}/bin/mix deps.get
-                  ${pkgs.elixir}/bin/mix test
-                '';
-              };
-              algorithm-javascript = {
-                imports = [
-                  devlib.devenvModules.javascript
-                ];
-                enterTest = ''
-                  ${pkgs.nodejs}/bin/npm ci
-                  ${pkgs.nodejs}/bin/npm run test
-                '';
-              };
-              algorithm-ocaml = {
-                imports = [
-                  devlib.devenvModules.ocaml
-                ];
-                enterTest = ''
-                  ${lib.getExe pkgs.dune_3} runtest
-                '';
-              };
-              algorithm-python = {
-                imports = [
-                  devlib.devenvModules.python
-                ];
-                enterTest = ''
-                  ${lib.getExe pkgs.uv} run pytest
-                '';
+              treefmt.config.programs = {
+                clang-format.enable = true;
+                cmake-format.enable = true;
               };
             };
           };
         };
       systems = [
         "x86_64-linux"
-        "x86_64-darwin"
         "aarch64-linux"
         "aarch64-darwin"
       ];

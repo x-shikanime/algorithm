@@ -1,41 +1,64 @@
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - id: createGithubAppToken
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.OPERATOR_APP_ID }}
-          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          token: ${{ steps.createGithubAppToken.outputs.token }}
-      - uses: shikanime-studio/setup-nix-action@v1
-        with:
-          github-token: ${{ steps.createGithubAppToken.outputs.token }}
-      - run: nix flake check --accept-flake-config --all-systems --no-pure-eval
-  publish:
-    needs:
-      - check
-    runs-on: ubuntu-latest
-    steps:
-      - id: createGithubAppToken
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.OPERATOR_APP_ID }}
-          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          token: ${{ steps.createGithubAppToken.outputs.token }}
-      - env:
-          GITHUB_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
-          REF_NAME: ${{ github.ref_name }}
-          REPO: ${{ github.repository }}
-        run: gh release create "$REF_NAME" --repo "$REPO" --generate-notes
 name: Release
-'on':
+permissions:
+  contents: read
+"on":
   push:
+    branches:
+      - main
+      - release-[0-9]+.[0-9]+
     tags:
       - v?[0-9]+.[0-9]+.[0-9]+*
+  workflow_call:
+    secrets:
+      CACHIX_AUTH_TOKEN:
+        required: true
+      OPERATOR_PRIVATE_KEY:
+        required: true
+  workflow_dispatch:
+    inputs:
+      ref_name:
+        description: Tag or branch to release
+        required: true
+jobs:
+  javascript:
+    secrets:
+      OPERATOR_PRIVATE_KEY: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+    uses: ./.github/workflows/javascript.yaml
+  nix:
+    permissions:
+      contents: read
+      packages: write
+    secrets:
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      OPERATOR_PRIVATE_KEY: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+    uses: ./.github/workflows/nix.yaml
+    with:
+      cachix-name: shikanime
+  release:
+    if: (startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && startsWith(github.event.inputs.ref_name, 'v'))
+    needs:
+      - nix
+      - javascript
+    permissions:
+      contents: write
+    runs-on: ubuntu-slim
+    steps:
+      - id: createGithubAppToken
+        continue-on-error: true
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.OPERATOR_APP_ID }}
+          permission-contents: write
+          permission-workflows: write
+          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+      - uses: shikanime-studio/actions/nix/setup@v9
+        with:
+          github-token: ${{ steps.createGithubAppToken.outputs.token }}
+      - uses: shikanime-studio/actions/checkout@v9
+        with:
+          github-token: ${{ steps.createGithubAppToken.outputs.token }}
+      - uses: shikanime-studio/actions/release@v9
+        with:
+          github-token: ${{ steps.createGithubAppToken.outputs.token }}
+          ref: ${{ github.ref_name || github.event.inputs.ref_name }}
+          repo: ${{ github.repository }}

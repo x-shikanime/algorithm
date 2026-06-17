@@ -1,6 +1,1 @@
-{
-  "recommendations": [
-    "ms-python.vscode-pylance",
-    "ms-python.python"
-  ]
-}
+{"recommendations": ["ms-python.vscode-pylance", "ms-python.python"]}

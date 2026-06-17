@@ -4,7 +4,7 @@
 
 <!-- markdownlint-enable first-line-heading -->
 
-## Algorithm
+# Algorithm
 
 Hey 🌸 I'm Shikanime Deva, this is my collection of algorithmic challenges
 solutions.
