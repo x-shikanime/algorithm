@@ -9,6 +9,9 @@ result-*
 # Ignore automatically generated direnv output
 .direnv
 
+# Ignore NixOS interactive test driver history
+**/.nixos-test-history
+
 ###---------------------------------------------------------------------###
 ###  Repo: shikanime-studio/gitignore/refs/heads/main/Devenv.gitignore  ###
 ###---------------------------------------------------------------------###
