@@ -48,15 +48,57 @@
         {
           devenv = {
             modules = [
+              devlib.devenvModules.docs
+              devlib.devenvModules.formats
               devlib.devenvModules.nix
               devlib.devenvModules.shell
               devlib.devenvModules.shikanime
             ];
             shells = {
               default = {
-                github.workflows.nix.enable = true;
-                github.settings.workflows.nix = {
-                  "with".cachix-name = "shikanime";
+                imports = [
+                  devlib.devenvModules.github
+                ];
+                github.workflows.test = with config.devenv.shells.default.github.actions; {
+                  enable = true;
+                  settings = {
+                    name = "Test";
+                    on = {
+                      push.branches = [ "main" ];
+                      pull_request.branches = [
+                        "main"
+                        "gh/*/*/base"
+                      ];
+                    };
+                    jobs.test = {
+                      "runs-on" = "ubuntu-latest";
+                      steps = with config.devenv.shells.default.github.lib; [
+                        create-github-app-token
+                        checkout
+                        setup-nix
+                        {
+                          run = mkWorkflowRun [
+                            "nix"
+                            "develop"
+                            "--accept-flake-config"
+                            "--no-pure-eval"
+                            ".#${mkWorkflowRef "matrix.package"}"
+                            "--command"
+                            "devenv"
+                            "test"
+                          ];
+                          "working-directory" = mkWorkflowRef "matrix.package";
+                        }
+                      ];
+                      strategy.matrix.package = [
+                        "algorithm-cc"
+                        "algorithm-elixir"
+                        "algorithm-javascript"
+                        "algorithm-ocaml"
+                        "algorithm-python"
+                      ];
+                    };
+                  };
                 };
               };
               algorithm-cc = {
@@ -127,6 +169,7 @@
         };
       systems = [
         "x86_64-linux"
+        "x86_64-darwin"
         "aarch64-linux"
         "aarch64-darwin"
       ];
