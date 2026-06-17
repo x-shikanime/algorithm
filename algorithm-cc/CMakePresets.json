@@ -1,34 +1,27 @@
 {
   "version": 3,
+  "buildPresets": [
+    { "name": "unknown-unknown-gnu", "configurePreset": "unknown-unknown-gnu" }
+  ],
   "configurePresets": [
     {
       "name": "unknown-unknown-gnu",
       "description": "Sets Ninja generator, build and install directory",
       "generator": "Ninja",
       "cacheVariables": {
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "CMAKE_MAKE_PROGRAM": "ninja",
+        "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
-        "CMAKE_C_COMPILER": "gcc"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_MAKE_PROGRAM": "ninja"
       }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "unknown-unknown-gnu",
-      "configurePreset": "unknown-unknown-gnu"
     }
   ],
   "testPresets": [
     {
       "name": "unknown-unknown-gnu",
       "configurePreset": "unknown-unknown-gnu",
-      "output": {
-        "outputOnFailure": true
-      },
-      "execution": {
-        "stopOnFailure": true
-      }
+      "execution": { "stopOnFailure": true },
+      "output": { "outputOnFailure": true }
     }
   ]
 }

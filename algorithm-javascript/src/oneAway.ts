@@ -46,5 +46,3 @@ function scoreOneAwayDeletion(a: string, b: string, scores: number[]): number {
 export function oneAway(a: string, b: string, factor: number): boolean {
   return scoreOneAway(a, b, []) >= b.length - factor;
 }
-
-

@@ -7,5 +7,3 @@ export function fib(n: number, acc: Memo = { [0]: 0, [1]: 1 }): [number, Memo] {
   const c = a + b;
   return [c, { [n]: c, ...bacc }];
 }
-
-

@@ -38,5 +38,5 @@ reference.
 - Require signed commits
 - Squash+rebase merge only
 
-*Focus on time/space complexity and correctness. Always use worktrees when
-making changes.*
+_Focus on time/space complexity and correctness. Always use worktrees when
+making changes._
